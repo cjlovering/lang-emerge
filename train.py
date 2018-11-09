@@ -63,27 +63,30 @@ for iterId in range(params['numEpochs'] * numIterPerEpoch):
     # forward pass
     team.forward(Variable(batchImg), Variable(batchTask))
     # backward pass
-    batchReward = team.backward(optimizer, batchLabels, epoch)
-
+    optimizer.zero_grad()
+    loss = team.backward(optimizer, batchLabels, epoch)
     # take a step by optimizer
     optimizer.step()
     #--------------------------------------------------------------------------
     # switch to evaluate
     team.evaluate()
-
-    for dtype in ['train', 'test']:
-        # get the entire batch
-        img, task, labels = data.getCompleteData(dtype)
-        # evaluate on the train dataset, using greedy policy
-        guess, _, _ = team.forward(Variable(img), Variable(task))
-        # compute accuracy for color, shape, and both
-        firstMatch = guess[0].data == labels[:, 0].long()
-        secondMatch = guess[1].data == labels[:, 1].long()
-        matches[dtype] = firstMatch & secondMatch
-        accuracy[dtype] = 100*torch.sum(matches[dtype])\
-                                    /float(matches[dtype].size(0))
+    with torch.no_grad():
+        for dtype in ['train', 'test']:
+            # get the entire batch
+            img, task, labels = data.getCompleteData(dtype)
+            # evaluate on the train dataset, using greedy policy
+            guess, _, _ = team.forward(Variable(img), Variable(task))
+            # compute accuracy for color, shape, and both
+            firstMatch = guess[0].data == labels[:, 0].long()
+            secondMatch = guess[1].data == labels[:, 1].long()
+            matches[dtype] = firstMatch & secondMatch
+            accuracy[dtype] = 100 * torch.sum(
+                    matches[dtype]) / float(matches[dtype].size(0))
     # switch to train
     team.train()
+
+    # handle memory issues
+    torch.cuda.empty_cache()
 
     # break if train accuracy reaches 100%
     if accuracy['train'] == 100: break
@@ -93,7 +96,7 @@ for iterId in range(params['numEpochs'] * numIterPerEpoch):
         team.saveModel(savePath, optimizer, params)
 
     if iterId % 100 != 0: continue
-
+    print(torch.cuda.memory_allocated())
     time = strftime("%a, %d %b %Y %X", gmtime())
     print('[%s][Iter: %d][Ep: %.2f][R: %.4f][Tr: %.2f Te: %.2f]' % \
                                 (time, iterId, epoch, team.totalReward,\

@@ -47,7 +47,9 @@ class ChatBot(nn.Module):
             self.cState = self.cState.cuda()
 
         # new episode
-        if not retainActions: self.actions = []
+        if not retainActions:
+            self.actions = []
+            self.spaces = []
 
     # freeze agent
     def freeze(self):
@@ -86,15 +88,9 @@ class ChatBot(nn.Module):
     def reinforce(self, rewards):
         loss = 0.
         for action, space in zip(self.actions, self.spaces):
-            weighted_prob = -space.log_prob(action)
-            weighted_prob = weighted_prob * rewards.squeeze(1)
+            weighted_prob = -space.log_prob(action) * rewards.squeeze(1)
             loss += weighted_prob.sum()
         return loss
-
-    # backward computation
-    def performBackward(self):
-        autograd.backward(self.actions, [None for _ in self.actions],\
-                                                retain_variables=True)
 
     # switch mode to evaluate
     def evaluate(self):
@@ -263,7 +259,7 @@ class Team:
             aBotReply = self.aBot.speak()
             aBotReply = aBotReply.detach()
             self.aBot.listen(aBotReply + self.aBot.listenOffset, imgEmbed)
-
+            
             if record: talk.extend([qBotQues, aBotReply])
 
         # listen to the last answer
@@ -287,11 +283,10 @@ class Team:
         # reinforce all actions for qBot, aBot
         q_loss = self.qBot.reinforce(self.reward)
         a_loss = self.aBot.reinforce(self.reward)
+        loss = q_loss + a_loss
 
-        # optimize
-        optimizer.zero_grad()
-        q_loss.backward(retain_graph=True)
-        a_loss.backward(retain_graph=True)
+        # optimize  
+        loss.backward()
 
         # clamp the gradients
         for p in self.qBot.parameters(): 
@@ -302,14 +297,14 @@ class Team:
                 p.grad.data.clamp_(min=-5., max=5.)
 
         # cummulative reward
-        batchReward = torch.mean(self.reward)/self.rlScale
+        batchReward = (torch.mean(self.reward) / self.rlScale).item()
 
         if self.totalReward is None: 
             self.totalReward = batchReward
 
         self.totalReward = 0.95 * self.totalReward + 0.05 * batchReward
 
-        return batchReward
+        return loss
 
     # loading modules from saved model
     def loadModel(self, savedModel):
