@@ -3,5 +3,5 @@ VISIBLE_CUDA_DEVICES=0
 # script to run the program
 python train.py -learningRate 0.01 -hiddenSize 100 -batchSize 1000 \
                 -imgFeatSize 20 -embedSize 20\
-                -useGPU -dataset $DATA_PATH\
+                -dataset $DATA_PATH\
                 -aOutVocab 4 -qOutVocab 3
