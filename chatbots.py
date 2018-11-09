@@ -75,7 +75,7 @@ class ChatBot(nn.Module):
         # compute softmax and choose a token
         outDistr = self.softmax(self.outNet(self.hState))
         # if evaluating
-        if self.evalFlag:
+        if False:
             _, actions = outDistr.max(1)
         else:
             space = torch.distributions.Categorical(outDistr)
@@ -162,7 +162,7 @@ class Questioner(ChatBot):
         outDistr = self.softmax(self.predictNet(self.hState))
 
         # if evaluating
-        if self.evalFlag:
+        if False:
             _, actions = outDistr.max(1)
         else:
             space = torch.distributions.Categorical(outDistr)

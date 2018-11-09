@@ -53,12 +53,9 @@ for iterId in range(params['numEpochs'] * numIterPerEpoch):
 
     # get double attribute tasks
     if 'train' not in matches:
-        batchImg, batchTask, batchLabels \
-                            = data.getBatch(params['batchSize'])
+        batchImg, batchTask, batchLabels = data.getBatch(params['batchSize'])
     else:
-        batchImg, batchTask, batchLabels \
-                = data.getBatchSpecial(params['batchSize'], matches['train'],\
-                                                        params['negFraction'])
+        batchImg, batchTask, batchLabels = data.getBatchSpecial(params['batchSize'], matches['train'], params['negFraction'])
 
     # forward pass
     team.forward(Variable(batchImg), Variable(batchTask))
@@ -77,11 +74,10 @@ for iterId in range(params['numEpochs'] * numIterPerEpoch):
             # evaluate on the train dataset, using greedy policy
             guess, _, _ = team.forward(Variable(img), Variable(task))
             # compute accuracy for color, shape, and both
-            firstMatch = guess[0].data == labels[:, 0].long()
+            firstMatch =  guess[0].data == labels[:, 0].long()
             secondMatch = guess[1].data == labels[:, 1].long()
             matches[dtype] = firstMatch & secondMatch
-            accuracy[dtype] = 100 * torch.sum(
-                    matches[dtype]) / float(matches[dtype].size(0))
+            accuracy[dtype] = 100 * torch.sum(matches[dtype]) / float(matches[dtype].size(0))
     # switch to train
     team.train()
 
@@ -92,15 +88,13 @@ for iterId in range(params['numEpochs'] * numIterPerEpoch):
     if accuracy['train'] == 100: break
 
     # save for every 5k epochs
-    if iterId > 0 and iterId % (10000*numIterPerEpoch) == 0:
+    if iterId > 0 and iterId % (10000 * numIterPerEpoch) == 0:
         team.saveModel(savePath, optimizer, params)
 
     if iterId % 100 != 0: continue
     print(torch.cuda.memory_allocated())
     time = strftime("%a, %d %b %Y %X", gmtime())
-    print('[%s][Iter: %d][Ep: %.2f][R: %.4f][Tr: %.2f Te: %.2f]' % \
-                                (time, iterId, epoch, team.totalReward,\
-                                accuracy['train'], accuracy['test']))
+    print('[%s][Iter: %d][Ep: %.2f][R: %.4f][Tr: %.3f Te: %.3f]' % (time, iterId, epoch, team.totalReward, accuracy['train'], accuracy['test']))
 #------------------------------------------------------------------------
 # save final model with a time stamp
 timeStamp = strftime("%a-%d-%b-%Y-%X", gmtime())
