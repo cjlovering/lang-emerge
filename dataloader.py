@@ -70,7 +70,7 @@ class Dataloader:
                 data[ii] = torch.LongTensor([self.attrVocab[at] for at in attrSet])
             self.data[dtype] = data
 
-        self.rangeInds = torch.range(0, self.numInst['train']-1).long()
+        self.rangeInds = torch.arange(self.numInst['train']).long()
         # ship to gpu if needed
         if self.useGPU:
             for key, value in self.data.items():
@@ -183,7 +183,7 @@ class Dataloader:
         # expand self.data three folds, along with labels
         batch = self.data[dtype].unsqueeze(0).repeat(1, 1, self.numPairTasks)
         batch = batch.view(-1, self.numAttrs)
-        tasks = torch.arange(0, self.numPairTasks).long()
+        tasks = torch.arange(self.numPairTasks).long()
         tasks = tasks.unsqueeze(0).repeat(1, self.numInst[dtype]).view(-1)
 
         # now sample predictions based on task
