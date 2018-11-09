@@ -337,4 +337,6 @@ class Team:
                     toSave[agentName][module] = toSaveModule
 
         # save as pickle
-        with open(savePath, 'w') as fileId: pickle.dump(toSave, fileId)
+        print(savePath)
+        with open(savePath, 'wb') as fileId: 
+           pickle.dump(toSave, fileId)
