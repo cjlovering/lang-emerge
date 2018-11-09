@@ -15,7 +15,8 @@ class ChatBot(nn.Module):
         super(ChatBot, self).__init__()
 
         # absorb all parameters to self
-        for attr in params: setattr(self, attr, params[attr])
+        for attr in params: 
+            setattr(self, attr, params[attr])
 
         # standard initializations
         self.hState = torch.Tensor()
@@ -63,6 +64,7 @@ class ChatBot(nn.Module):
     def listen(self, inputToken, imgEmbed = None):
         # embed and pass through LSTM
         tokenEmbeds = self.inNet(inputToken)
+
         # concat with image representation
         if imgEmbed is not None:
             tokenEmbeds = torch.cat((tokenEmbeds, imgEmbed), 1)
@@ -75,7 +77,7 @@ class ChatBot(nn.Module):
         # compute softmax and choose a token
         outDistr = self.softmax(self.outNet(self.hState))
         # if evaluating
-        if False:
+        if self.evalFlag:
             _, actions = outDistr.max(1)
         else:
             space = torch.distributions.Categorical(outDistr)
@@ -162,7 +164,7 @@ class Questioner(ChatBot):
         outDistr = self.softmax(self.predictNet(self.hState))
 
         # if evaluating
-        if False:
+        if self.evalFlag:
             _, actions = outDistr.max(1)
         else:
             space = torch.distributions.Categorical(outDistr)
@@ -259,7 +261,7 @@ class Team:
             aBotReply = self.aBot.speak()
             aBotReply = aBotReply.detach()
             self.aBot.listen(aBotReply + self.aBot.listenOffset, imgEmbed)
-            
+    
             if record: talk.extend([qBotQues, aBotReply])
 
         # listen to the last answer
@@ -275,8 +277,8 @@ class Team:
         self.reward.fill_(self.rlNegReward)
 
         # both attributes need to match
-        firstMatch = self.guessToken[0].data == gtLabels[:, 0:1].squeeze(1)
-        secondMatch = self.guessToken[1].data == gtLabels[:, 1:2].squeeze(1)
+        firstMatch = self.guessToken[0].data == gtLabels[:, 0]
+        secondMatch = self.guessToken[1].data == gtLabels[:, 1]
 
         self.reward[firstMatch & secondMatch] = self.rlScale
 
@@ -325,9 +327,9 @@ class Team:
 
     # saving module, at given path with params and optimizer
     def saveModel(self, savePath, optimizer, params):
-        modules = ['rnn', 'inNet', 'outNet', 'imgNet', \
-                            'predictRNN', 'predictNet']
-
+        modules = [
+            'rnn', 'inNet', 'outNet', 'imgNet', 'predictRNN', 'predictNet'
+        ]
         toSave = {'aBot':{}, 'qBot':{}, 'params': params, 'optims':optimizer}
         for agentName in ['aBot', 'qBot']:
             agent = getattr(self, agentName)
